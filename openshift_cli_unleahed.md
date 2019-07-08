@@ -1,12 +1,12 @@
 # What is part of the talk?
 
-First things first! Lets clarify why the OpenShift command line interface is important -> IMHO It allows you to create customized queries that are not possible in the Web-Consol and it can (and will) be used for automation. Which is a big part of DevOps -> Learn tools at hand and how to use them.
+First things first! Lets clarify why the OpenShift command line interface is important -> IMHO It allows you to create customized queries that are not possible in the Web-Consol and it can (and will) be used for automation. Which is a big part of DevOps -> Learn tools at hand and how to use them. Furthermore it can be extend with plugins.
 
-FIXME BOT talking about odo!!
+For the snippets below I was using oc cli with version 4.1. Plugins should work with older versions as well. All commands are only tested on Linux.
 
 ## Features in OpenShift CLI (oc tool)
 
-- Get a list of all available resources including CRD with the command `oc api-resources`. Try `oc api-resources -o wide` and `oc api-resources --api-group=image.openshift.io` as well.
+- Get a list of all available resources including CRD with the command `oc api-resources`. Try out `oc api-resources -o wide` and `oc api-resources --api-group=image.openshift.io` as well.
 - Use `oc explain` to get a description about resources like pod, deployment config build config and other resources. To get details of pods use `oc explain pod`. To dig deep into the resource append a `.` and a append the resource name of which you what to know more `oc explain pod.spec`.
 - You can add the parameter `--as` to your command to execute it as defined user. For example to query builds as the service account  Login mit Service Account `oc get builds.build.openshift.io test-1 --as=system:serviceaccount:myproject:builder`. You can login as a service account with the following command `oc login --token=$(oc sa get-token builder)`.
 - Usually with the command line tool you fetch a single resource like pods, deployment config and so on. If you concatenate resources with a comma you can query multiple resources at once. This is useful for creating your own templates. An example is `oc get is,bc,dc,svc,route -o yaml`.
@@ -25,13 +25,14 @@ Similar to `oc patch` allows you to modify resources in OpenShift. IMHO `the oc 
 
 - Adding values in the yaml with `oc patch dc deployment-example --type='json' -p='[{"op": "add", "path": "/metadata/labels/version", "value": "version1" },{"op": "add", "path": "/spec/template/metadata/labels/version", "value": "version1" }]'`
 - Replacing values in yaml with `oc patch dc deployment-example --type='json' -p='[{"op": "replace", "path": "/metadata/labels/version", "value": "version2" },{"op": "replace", "path": "/spec/template/metadata/labels/version", "value": "version2" }]'`
-- remove
+- Removing values with `oc patch dc deployment-example --type json -p '[{ "op": "remove", "path": "/spec/template/metadata/labels/version" },{ "op": "remove", "path": "/metadata/labels/version" }]'`
 
 ## Erweiterung von oc bzw. kubectl
 
-- stern
-- rakkless
-- ksniff
-- popeye
-- k9s
-- hey & siege
+- [stern](https://github.com/wercker/stern) --> Log-Ausgabe of multiple Pods und filtern of Pods with regular expressions.
+- [popeye](https://github.com/derailed/popeye) --> Shows potential issues of deployments and configuration intended for Kubernetes but work well with OpenShift
+- [k9s](https://github.com/derailed/k9s) --> Text base "graphical" user for Kubernetes but works partly for OpenShift as well.
+- [rakkless](https://github.com/corneliusweig/rakkess) --> Shows matrix of permissions for a user, since `oc policy can-i --list --user=<user>` is deprecated with OpenShift 3.11.
+- [ksniff](https://github.com/eldadru/ksniff) --> Allows tcp dump of pods
+- [hey](https://github.com/rakyll/hey) & [siege](https://github.com/JoeDog/siege) --> Simple load test tools
+- [select](https://github.com/brendandburns/kubectl-select) --> Plugin to select resource for further processing i.e. `oc rsh $(oc select po)`
