@@ -15,7 +15,13 @@ For the snippets below I was using oc cli with version 4.1. Plugins should work 
   - It is possible to sort the columns by a custom attribute like i.e. `oc get imagestreamtag -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp --sort-by=.metadata.creationTimestamp -n openshift`
   - For more complicated output you can either use golang template
  or jsonpath template. This becomes handy if you want to display the used imagestreams for all build and build strategies in an OpenShift cluster:
- `oc get bc -o go-template='{{range .items}}{{.metadata.namespace}}{{"\t"}}{{.metadata.name}}{{"\t"}}{{if .spec.strategy.dockerStrategy}}{{.spec.strategy.dockerStrategy.from.name}}{{else if .spec.strategy.sourceStrategy}}{{ .spec.strategy.sourceStrategy.from.name}}{{else if .spec.strategy.customStrategy}}{{ .spec.strategy.customStrategy.from.name}}{{end}}{{"\n"}}{{end}}' --all-namespaces`
+
+     ```bash
+    {% raw%}
+    oc get bc -o go-template='{{range .items}}{{.metadata.namespace}}{{"\t"}}{{.metadata.name}}{{"\t"}}{{if .spec.strategy.dockerStrategy}}{{.spec.strategy.dockerStrategy.from.name}}{{else if .spec.strategy.sourceStrategy}}{{ .spec.strategy.sourceStrategy.from.name}}{{else if .spec.strategy.customStrategy}}{{ .spec.strategy.customStrategy.from.name}}{{end}}{{"\n"}}{{end}}' --all-namespaces`
+    {% endraw %}
+    ```
+
 - To copy files between your computer and a pod Kubernetes offers the `kubectl cp` command which is available on OpenShift as well. In OpenShift there is the command `oc rsync` which offers a syncing of a folder between your local computer and a pod out of the box. It works on all platforms that support the oc client.
 - oc apply -> A word of warning: `kubectl apply` and `oc apply` a like are great commands to update a resource. However, use this command only if you are sure that the resource has not been altered manually, because it does a three way comparison between current, previous and next version. Manual modification "usually" not update the previous version as well.
 
