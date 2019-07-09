@@ -18,7 +18,7 @@ For the snippets below I was using oc cli with version 4.1. Plugins should work 
 
      ```bash
     {% raw%}
-    oc get bc -o go-template='{{range .items}}{{.metadata.namespace}}{{"\t"}}{{.metadata.name}}{{"\t"}}{{if .spec.strategy.dockerStrategy}}{{.spec.strategy.dockerStrategy.from.name}}{{else if .spec.strategy.sourceStrategy}}{{ .spec.strategy.sourceStrategy.from.name}}{{else if .spec.strategy.customStrategy}}{{ .spec.strategy.customStrategy.from.name}}{{end}}{{"\n"}}{{end}}' --all-namespaces`
+    oc get bc -o go-template='{{range .items}}{{.metadata.namespace}}{{"\t"}}{{.metadata.name}}{{"\t"}}{{if .spec.strategy.dockerStrategy}}{{.spec.strategy.dockerStrategy.from.name}}{{else if .spec.strategy.sourceStrategy}}{{ .spec.strategy.sourceStrategy.from.name}}{{else if .spec.strategy.customStrategy}}{{ .spec.strategy.customStrategy.from.name}}{{end}}{{"\n"}}{{end}}' --all-namespaces
     {% endraw %}
     ```
 
