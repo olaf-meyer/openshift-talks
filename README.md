@@ -2,4 +2,6 @@
 
 [Link to this page on GitHub pages](https://olaf-meyer.github.io/openshift-talks/)
 
-[OpenShift cli unleashed](openshift_cli_unleahed.md)
+[OpenShift cli unleashed](openshift_cli_unleashed.md)
+
+[Istio workshop part 2](istio_workshop_part2.md)

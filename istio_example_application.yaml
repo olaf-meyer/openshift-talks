@@ -1,0 +1,414 @@
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: customer
+      version: v1
+    name: customer
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: customer
+        version: v1
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: http
+          prometheus.io/scrape: "true"
+        creationTimestamp: null
+        labels:
+          app: customer
+          version: v1
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xms128m -Xmx256m -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:///dev/./urandom
+          image: quay.io/omeyer/istio-tutorial:customerv1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: customer
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: preference
+      version: v1
+    name: preference-v1
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: preference
+        version: v1
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: http
+          prometheus.io/scrape: "true"
+        creationTimestamp: null
+        labels:
+          app: preference
+          version: v1
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xms128m -Xmx256m -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:///dev/./urandom
+          image: quay.io/omeyer/istio-tutorial:preferencesv1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: preference
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: recommendation
+      version: v1
+    name: recommendation-v1
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: recommendation
+        version: v1
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          sidecar.istio.io/inject: "true"
+        creationTimestamp: null
+        labels:
+          app: recommendation
+          version: v1
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xms15m -Xmx15m -Xmn15m
+          image: quay.io/omeyer/istio-tutorial:recommendationv1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: recommendation
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: recommendation
+      version: v2
+    name: recommendation-v2
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: recommendation
+        version: v2
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: http
+          prometheus.io/scrape: "true"
+        creationTimestamp: null
+        labels:
+          app: recommendation
+          version: v2
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xmx256m
+          image: quay.io/omeyer/istio-tutorial:recommendationv2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: recommendation
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 10
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: customer
+    name: customer
+  spec:
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: customer
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: preference
+    name: preference
+  spec:
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: preference
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: recommendation
+    name: recommendation
+  spec:
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: recommendation
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      app: customer
+    name: customer
+  spec:
+    port:
+      targetPort: http
+    to:
+      kind: Service
+      name: customer
+      weight: 100
+    wildcardPolicy: None
+- apiVersion: networking.istio.io/v1alpha3
+  kind: Gateway
+  metadata:
+    name: customer-gateway
+  spec:
+    selector:
+      istio: ingressgateway # use istio default controller
+    servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+      - "*"
+- apiVersion: networking.istio.io/v1alpha3
+  kind: VirtualService
+  metadata:
+    name: customer-gateway
+  spec:
+    hosts:
+    - "*"
+    gateways:
+    - customer-gateway
+    http:
+    - match:
+      - uri:
+          prefix: /customer
+      rewrite:
+        uri: /
+      route:
+      - destination:
+          host: customer
+          port:
+            number: 8080
+kind: List
+metadata: {}
