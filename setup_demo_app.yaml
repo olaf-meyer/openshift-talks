@@ -1,0 +1,813 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: demo-app-and-config
+parameters:
+- name: DEPLOYMENT_NAMESPACE
+  description: "Namespace to which the application will be deployed"
+  required: true
+- name: CONTROLPLANE_NAMESPACE
+  description: "Namespace of the istio control plane"
+  required: true
+- name: CLUSTER_DOMAIN
+  description: "Domain of the OpenShift cluster e.g. apps.acme.com"
+  required: true
+- name: KEYCLOAK_DOMAIN
+  description: "Domain of the keycloak server in the OpenSHift cluster"
+  required: true
+objects:
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: customer
+    namespace: ${DEPLOYMENT_NAMESPACE}
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: preference
+    namespace: ${DEPLOYMENT_NAMESPACE}
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: recommendationv1
+    namespace: ${DEPLOYMENT_NAMESPACE}
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: recommendationv2
+    namespace: ${DEPLOYMENT_NAMESPACE}
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: recommendationv3
+    namespace: ${DEPLOYMENT_NAMESPACE}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: customer
+      version: v1
+    name: customer
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: customer
+        version: v1
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: https
+          prometheus.io/scrape: "true"
+          sidecar.istio.io/inject: "true"
+        creationTimestamp: null
+        labels:
+          app: customer
+          version: v1
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xms128m -Xmx256m -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:///dev/./urandom
+          image: quay.io/omeyer/istio-tutorial:customerv1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: customer
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccountName: customer
+        terminationGracePeriodSeconds: 30
+  status:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: preference
+      version: v1
+    name: preference-v1
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: preference
+        version: v1
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: https
+          prometheus.io/scrape: "true"
+          sidecar.istio.io/inject: "true"
+        labels:
+          app: preference
+          version: v1
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xms128m -Xmx256m -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:///dev/./urandom
+          image: quay.io/omeyer/istio-tutorial:preferencesv1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: preference
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccountName: preference
+        terminationGracePeriodSeconds: 30
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: recommendation
+      version: v1
+    name: recommendation-v1
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: recommendation
+        version: v1
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: https
+          prometheus.io/scrape: "true"
+          sidecar.istio.io/inject: "true"
+        creationTimestamp: null
+        labels:
+          app: recommendation
+          version: v1
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xms15m -Xmx15m -Xmn15m
+          image: quay.io/omeyer/istio-tutorial:recommendationv1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: recommendation
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccountName: recommendationv1
+        terminationGracePeriodSeconds: 30
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: recommendation
+      version: v2
+    name: recommendation-v2
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: recommendation
+        version: v2
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: https
+          prometheus.io/scrape: "true"
+          sidecar.istio.io/inject: "true"
+        creationTimestamp: null
+        labels:
+          app: recommendation
+          version: v2
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xmx256m
+          image: quay.io/omeyer/istio-tutorial:recommendationv2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: recommendation
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 10
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        serviceAccountName: recommendationv2
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: recommendation
+      version: v3
+    name: recommendation-v3
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: recommendation
+        version: v3
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scheme: https
+          prometheus.io/scrape: "true"
+          sidecar.istio.io/inject: "true"
+        creationTimestamp: null
+        labels:
+          app: recommendation
+          version: v3
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: -Xmx256m
+          image: quay.io/omeyer/istio-tutorial:recommendationv3
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: recommendation
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - 127.0.0.1:8080/health
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 10
+          resources: {}
+          securityContext:
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        serviceAccountName: recommendationv2
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: customer
+    name: customer
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    ports:
+    - name: http-customer
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: customer
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: preference
+    name: preference
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    ports:
+    - name: http-preferences
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: preference
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: recommendation
+    name: recommendation
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    ports:
+    - name: http-recommendation
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: recommendation
+    sessionAffinity: None
+    type: ClusterIP
+# - kind: Route
+#   apiVersion: route.openshift.io/v1
+#   metadata:
+#     name: customer-ingress
+#     namespace: ${CONTROLPLANE_NAMESPACE}
+#     labels:
+#   spec:
+#     host: customer-${DEPLOYMENT_NAMESPACE}.${CLUSTER_DOMAIN}
+#     to:
+#       kind: Service
+#       name: istio-ingressgateway
+#       weight: 100
+#     port:
+#       targetPort: http2
+#     wildcardPolicy: None
+#   status:
+### Istio ingress routing
+- apiVersion: networking.istio.io/v1alpha3
+  kind: Gateway
+  metadata:
+    name: customer-gateway
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    selector:
+      istio: ingressgateway # use istio default controller
+    servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+      - "customer-${DEPLOYMENT_NAMESPACE}.${CLUSTER_DOMAIN}"
+- apiVersion: networking.istio.io/v1alpha3
+  kind: VirtualService
+  metadata:
+    name: customer-gateway-vs
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    hosts:
+    - "customer-${DEPLOYMENT_NAMESPACE}.${CLUSTER_DOMAIN}"
+    gateways:
+    - customer-gateway
+    http:
+    - match:
+      - uri:
+          prefix: /customer
+      rewrite:
+        uri: /
+      route:
+      - destination:
+          host: customer
+          port:
+            number: 8080
+### Istio inter server routing
+- apiVersion: networking.istio.io/v1alpha3
+  kind: VirtualService
+  metadata:
+    name: customer
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    hosts:
+    - customer
+    http:
+    - route:
+      - destination:
+          host: customer
+          subset: version-v1
+          weight: 100
+- apiVersion: networking.istio.io/v1alpha3
+  kind: VirtualService
+  metadata:
+    name: preference
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    hosts:
+    - preference
+    http:
+    - route:
+      - destination:
+          host: preference
+          subset: version-v1
+          weight: 100
+      fault:
+        delay:
+          fixedDelay: "3s"
+          percentage:
+            value: 20.0
+- apiVersion: networking.istio.io/v1alpha3
+  kind: VirtualService
+  metadata:
+    name: recommendation
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    hosts:
+    - recommendation
+    http:
+    - route:
+      - destination:
+          host: recommendation
+          subset: version-v1
+        weight: 50
+      - destination:
+          host: recommendation
+          subset: version-v2
+        weight: 25
+      - destination:
+          host: recommendation
+          subset: version-v3
+        weight: 25
+      fault:
+        abort:
+          httpStatus: 503
+          percentage:
+            value: 20.0
+- apiVersion: networking.istio.io/v1alpha3
+  kind: DestinationRule
+  metadata:
+    name: customer
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    host: customer
+    subsets:
+      - name: version-v1
+        labels:
+          version: v1
+    trafficPolicy:
+      tls:
+        mode: ISTIO_MUTUAL
+- apiVersion: networking.istio.io/v1alpha3
+  kind: DestinationRule
+  metadata:
+    name: preference
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    host: preference
+    subsets:
+      - name: version-v1
+        labels:
+          version: v1
+    trafficPolicy:
+      tls:
+        mode: ISTIO_MUTUAL
+- apiVersion: networking.istio.io/v1alpha3
+  kind: DestinationRule
+  metadata:
+    name: recommendation
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    host: recommendation
+    subsets:
+      - name: version-v1
+        labels:
+          version: v1
+      - name: version-v2
+        labels:
+          version: v2
+      - name: version-v3
+        labels:
+          version: v3
+    trafficPolicy:
+      tls:
+        mode: ISTIO_MUTUAL
+- apiVersion: networking.istio.io/v1alpha3
+  kind: ServiceEntry
+  metadata:
+    name: worldclockapi-egress-rule
+  spec:
+    hosts:
+    - worldclockapi.com
+    ports:
+    - name: http-80
+      number: 80
+      protocol: http
+### Istio Switch RBAC enforcement on
+- apiVersion: "rbac.maistra.io/v1"
+  kind: ServiceMeshRbacConfig
+  metadata:
+    name: default
+    namespace: ${CONTROLPLANE_NAMESPACE}
+  spec:
+    mode: 'ON'
+### Istio RBAC service config unsing authorization policy instead of ServiceBinding for all services includes gateway
+- apiVersion: "security.istio.io/v1beta1"
+  kind: "AuthorizationPolicy"
+  metadata:
+    name: "ingress"
+    namespace: ${CONTROLPLANE_NAMESPACE}
+  spec:
+    selector:
+      matchLabels:
+        app: istio-ingressgateway
+    rules:
+    - to:
+      - operation:
+          methods: ["GET"]
+- apiVersion: "security.istio.io/v1beta1"
+  kind: "AuthorizationPolicy"
+  metadata:
+    name: "ingress-customer"
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    selector:
+      matchLabels:
+        app: customer
+    rules:
+      # - from:
+      #     - source:
+      #         requestPrincipals:
+      #           - >-
+      #             https://${KEYCLOAK_DOMAIN}/auth/realms/customer/9c5c191d-8f11-4b6c-840f-a3cd7cbf3876
+      - when:
+          - key: 'request.auth.claims[roles]'
+            values:
+              - customer
+      - to:
+          - operation:
+              methods:
+                - GET
+              # notPaths: ["/metrics"]
+- apiVersion: "security.istio.io/v1beta1"
+  kind: "AuthorizationPolicy"
+  metadata:
+    name: "preference"
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    selector:
+      matchLabels:
+        app: preference
+    rules:
+    - from:
+      - source:
+          principals: ["cluster.local/ns/${DEPLOYMENT_NAMESPACE}/sa/customer"]
+      to:
+      - operation:
+          methods: ["GET"]
+          # notPaths: ["/metrics"]
+- apiVersion: "security.istio.io/v1beta1"
+  kind: "AuthorizationPolicy"
+  metadata:
+    name: "recommendation"
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    selector:
+      matchLabels:
+        app: recommendation
+    rules:
+    - from:
+      - source:
+          principals: ["cluster.local/ns/${DEPLOYMENT_NAMESPACE}/sa/preference"]
+      to:
+      - operation:
+          methods: ["GET"]
+          # notPaths: ["/metrics"]
+- apiVersion: "security.istio.io/v1beta1"
+  kind: "AuthorizationPolicy"
+  metadata:
+    name: "scrape-metrics"
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    rules:
+    - source:
+        namespaces: ["${CONTROLPLANE_NAMESPACE}"]
+      to:
+      - operation:
+          methods: ["GET"]
+          path: [/metrics]
+# ### Istio switch mTLS enforcement on
+# - apiVersion: "authentication.maistra.io/v1"
+#   kind: "ServiceMeshPolicy"
+#   metadata:
+#     name: "default"
+#     namespace: ${CONTROLPLANE_NAMESPACE}
+#   spec:
+#     peers:
+#     - mtls: 
+#        mode: STRICT
+### Istio default mTLS rule switch on for ${CONTROLPLANE_NAMESPACE}, so that Kiali can monitor customer traffic(You can use istio configmap entry enableAutoMtls = true as well)
+- apiVersion: "networking.istio.io/v1alpha3"
+  kind: "DestinationRule"
+  metadata:
+    name: "default"
+    namespace: ${CONTROLPLANE_NAMESPACE}
+  spec:
+    host: "*.local"
+    trafficPolicy:
+      tls:
+        mode: ISTIO_MUTUAL
+### Istio (Ingress) Policy to enforce authorization via JWT and Keycloak
+- apiVersion: authentication.istio.io/v1alpha1
+  kind: Policy
+  metadata:
+    name: customerjwt
+    namespace: ${DEPLOYMENT_NAMESPACE}
+  spec:
+    targets:
+      - name: customer
+      - name: preference
+      - name: recommendation
+    peers:
+      - mtls: {}
+    origins:
+      - jwt:
+          audiences:
+            - customer
+          issuer: 'https://${KEYCLOAK_DOMAIN}/auth/realms/customer'
+          #jwks: {"keys":[{"kid":"WyXEwTpUURQsNanFbktq-KIHRM156vubC54uw3qio_0","kty":"RSA","alg":"RS256","use":"sig","n":"yQRHyWzFqXZ5DegUpf_9QA2kr5Ys2N6XXUhNdAHTh_CjQT-NQN3p5xyAfY6IdOlOevtueRdI0Jmj3C1Z_iGm_YfhvFKfQOYdbQH4pzLPSlBoOaADVqIgE55qrvoysft_KgAvUr2W7b4vWy13PKzBdcec6EDxxod3MmphT0K_9bit-KPMXEeLKlKfRVYAYEdM8FQJpUuO4HQv-xCP-KhYcR_YvipxhpthDkQqmZiAn6b4QffK-9brDlnhgCsQjP92GMPUU9AZ-G8UXE9W5B0cIblt9hogZDA8_jpXmOp2-tEqrd5T_HxfSYvQpSFDo3CY7rAvisR0ML6asB_RhUBQdQ","e":"AQAB"}]}
+          jwksUri: 'https://${KEYCLOAK_DOMAIN}/auth/realms/customer/protocol/openid-connect/certs'
+          triggerRules:
+          - excludedPaths:
+            - exact: /metrics
+    principalBinding: USE_ORIGIN
